@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Botnet Command Host</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.7/tailwind.min.css">
+    <style>
+        #map {
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Sidebar -->
+    <div class="flex">
+        <div class="w-1/5 bg-white shadow-md">
+            <div class="p-4">
+                <h1 class="text-2xl font-bold">Botnet Command Host</h1>
+                <ul class="mt-6">
+                    <li class="my-2">
+                        <a href="#" class="text-blue-500 hover:text-blue-700" id="overviewLink">Overview</a>
+                    </li>
+                    <li class="my-2">
+                        <a href="#" class="text-blue-500 hover:text-blue-700" id="botsLocationLink">Bots Location</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow p-8">
+            <!-- Overview -->
+            <div id="overview" class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">Overview</h2>
+                <div class="bg-white rounded-lg p-6 shadow-md">
+                    <div class="mb-4">
+                        <h3 class="text-xl font-semibold">Connected Bots</h3>
+                        <p id="connectedBotsCount" class="text-gray-600"></p>
+                    </div>
+                    <!-- Add more overview information here -->
+                </div>
+            </div>
+
+            <!-- Bots Location -->
+            <div id="botsLocation" class="hidden">
+                <h2 class="text-2xl font-bold mb-4">Bots Location</h2>
+                <div id="map"></div>
+            </div>
+
+            <!-- Command Form -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold mb-4">Send Command</h2>
+                <form id="commandForm">
+                    <div class="flex items-center mb-4">
+                        <label for="botSelect" class="mr-2">Bot:</label>
+                        <select id="botSelect" class="border border-gray-300 rounded-md px-2 py-1">
+                            <!-- Bot options will be dynamically added here -->
+                        </select>
+                    </div>
+                    <div class="flex items-center">
+                        <label for="commandInput" class="mr-2">Command:</label>
+                        <input type="text" id="commandInput" class="border border-gray-300 rounded-md px-2 py-1">
+                        <button type="submit" class="bg-blue-500 text-white rounded-md px-4 py-1 ml-2">Send Command</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Command Output -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold mb-4">Command Output</h2>
+                <pre id="commandOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        var botLocations = []; // Store bot locations
+        var map;
+
+        // Update the connected bots count
+        function updateConnectedBotsCount() {
+            var count = botLocations.length;
+            $('#connectedBotsCount').text(count + ' Bot' + (count !== 1 ? 's' : '') + ' Connected');
+        }
+
+        // Update the bot select options
+        function updateBotSelectOptions() {
+            var botSelect = $('#botSelect');
+            botSelect.empty();
+            for (var i = 0; i < botLocations.length; i++) {
+                var bot = botLocations[i];
+                botSelect.append($('<option></option>').val(bot.bot_address).text(bot.bot_address));
+            }
+        }
+
+        // Update the command output with the response from the server
+        function updateCommandOutput(response) {
+            var commandOutput = $('#commandOutput');
+            commandOutput.text(response);
+        }
+
+        // Submit the command form via AJAX
+        $('#commandForm').on('submit', function(event) {
+            event.preventDefault();
+
+            var botAddress = $('#botSelect').val();
+            var command = $('#commandInput').val();
+
+            $.ajax({
+                url: '/send_command',
+                method: 'POST',
+                data: {
+                    bot_address: botAddress,
+                    command: command
+                },
+                success: function(data) {
+                    var results = data;
+                    var output = '';
+                    for (var i = 0; i < results.length; i++) {
+                        var result = results[i];
+                        output += 'Bot: ' + result.bot_address + '\n';
+                        output += 'Result: ' + result.result + '\n';
+                        output += '\n';
+                    }
+                    updateCommandOutput(output);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+
+            $('#commandInput').val('');
+        });
+
+        // Fetch and update the bots location from the server
+        function fetchBotsLocation() {
+            fetch('/bots_location')
+            .then(response => response.json())
+            .then(data => {
+                botLocations = data;
+                updateConnectedBotsCount();
+                updateBotSelectOptions();
+            })
+            .catch(error => {
+                console.log(error);
+            });
+        }
+
+        // Toggle visibility of dashboard sections
+        $('#overviewLink').on('click', function(event) {
+            event.preventDefault();
+            $('#overview').removeClass('hidden');
+            $('#botsLocation').addClass('hidden');
+        });
+
+        $('#botsLocationLink').on('click', function(event) {
+            event.preventDefault();
+            $('#overview').addClass('hidden');
+            $('#botsLocation').removeClass('hidden');
+
+            if (!map) {
+                // Create the map when switching to the bot locations section
+                map = L.map('map').setView([0, 0], 2);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+                    maxZoom: 18,
+                }).addTo(map);
+            }
+
+            for (var i = 0; i < botLocations.length; i++) {
+                var location = botLocations[i];
+                L.marker([location.lat, location.lng]).addTo(map)
+                    .bindPopup('<b>Bot:</b> ' + location.bot_address + '<br><b>Location:</b> ' + location.location);
+            }
+        });
+
+        // Fetch and update the bots location initially
+        fetchBotsLocation();
+    </script>
+</body>
+</html>
