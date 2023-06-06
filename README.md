@@ -1,4 +1,4 @@
-![Logo](https://github.com/as-squirrel/botnetFramework/assets/114065413/995e5e78-478e-4869-8439-91c2d6d080da)
+![LogoCodeHunt](https://github.com/as-squirrel/botnetFramework/assets/114065413/39e14d8b-e64e-4112-a20e-1a41c5caf29f)
 # botnetFramework
 
 BotnetFramework is a tool that is still under development, but you can find and test the current version here. This tool is intended for educational purposes only and not to be used for illegal actions.
