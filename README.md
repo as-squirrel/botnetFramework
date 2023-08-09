@@ -1,3 +1,5 @@
+#THIS PROJECT IS UNDER CONSTRUCTION: I WILL PUBLISH A BRAND NEW REBUILD SOON!
+
 ![LogoCodeHunt](https://github.com/as-squirrel/botnetFramework/assets/114065413/39e14d8b-e64e-4112-a20e-1a41c5caf29f)
 # botnetFramework
 
